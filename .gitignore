@@ -24,3 +24,11 @@ __pycache__/
 !.env.example
 *.pem
 *.key
+
+# Workspace baseline: dependency dirs, tool caches, logs
+node_modules/
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+*.log
