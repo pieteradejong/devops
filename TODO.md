@@ -10,4 +10,5 @@ Open items for this repo. Tick, never delete. Workspace-level items are in `~/de
 - [ ] 2026-11-16 Later, with its own approval: the ~22 project `test.sh` files that call `~/dev/dotfiles/security/gate.sh`, then retire the copies in dotfiles — D76
 - [ ] 2026-11-16 `DOTFILES_DIR` is still the name of this repo's root variable in several scripts; rename it to `DEVOPS_DIR` in one pass with the tests — D76
 - [ ] 2026-11-16 Split the security parts of dotfiles' `docs/maintenance.md` and `warnings-runbook.md` into this repo, then make the absolute links in `docs/policy/` relative again — D76
-- [ ] 2026-11-16 `portfolio.md` and a hero image rendered from fixtures, then list the repo on astropieter (after it is public) — D76
+- [ ] 2026-11-16 List the repo on astropieter once it is public: `scripts/sync-projects.sh --repo devops` on a branch, `./test.sh`, then push `main` after Pieter confirms (`portfolio.md` and the fixture hero `docs/preview.png` are in place; the dry run passes) — D76
+- [ ] 2026-11-16 `scripts/audit-dashboard.py` still labels its output "dotfiles/scripts/audit-dashboard.py"; rename the label with the `DOTFILES_DIR` pass — D76
