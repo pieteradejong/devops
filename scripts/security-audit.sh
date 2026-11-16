@@ -58,8 +58,9 @@ CACHE_DIR="$HOME/.cache/security-audit"
 LOG_DIR="$HOME/Library/Logs/security-audit"
 OWNER=pieteradejong
 MIRROR_MAX_MB=1000
-SKIPLIST_FILE="${SKIPLIST_FILE:-$DOTFILES_DIR/private/audit/skiplist.conf}"
-PERSONAL_PATTERNS_FILE="$DOTFILES_DIR/private/security/personal-patterns.conf"
+DEVOPS_PRIVATE_DIR="${DEVOPS_PRIVATE_DIR:-$(if [ -d "$DOTFILES_DIR/private" ]; then cd "$DOTFILES_DIR/private" && pwd; else echo "$HOME/dev/dotfiles/private"; fi)}"
+SKIPLIST_FILE="${SKIPLIST_FILE:-$DEVOPS_PRIVATE_DIR/audit/skiplist.conf}"
+PERSONAL_PATTERNS_FILE="$DEVOPS_PRIVATE_DIR/security/personal-patterns.conf"
 BYPASS_LOG="${SECURITY_GATE_BYPASS_LOG:-$HOME/.local/state/security-gate/bypass.log}"
 QUICK=0; FORCE_HISTORY=0; NOTIFY=1; TEMPLATES=0
 TEMPLATE_VERSIONS="${TEMPLATE_VERSIONS:-$SCRIPT_DIR/template-versions.py}"

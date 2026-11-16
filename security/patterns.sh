@@ -155,8 +155,8 @@ SECURITY_CI_ERE='security-reusable\.yml'
 
 # The GitHub owner whose repos these standards bind. Everything else is a fork or
 # a clone of someone else's code: secrets and privacy still apply, standards not.
-OWN_GITHUB_OWNER='pieteradejong'
-CANONICAL_HOLDER='Pieter de Jong'
+OWN_GITHUB_OWNER="${DEVOPS_GITHUB_OWNER:-pieteradejong}"
+CANONICAL_HOLDER="${DEVOPS_LICENSE_HOLDER:-Pieter de Jong}"
 
 # Dependency lockfiles embed third-party maintainers' addresses (npm deprecation
 # notices, author fields) that no one here can change. Exempt from the gate's

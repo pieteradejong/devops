@@ -21,7 +21,8 @@
 LOGS_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOGS_DOTFILES_DIR="$(cd "$LOGS_LIB_DIR/../.." && pwd)"
 # The audit's SKIPLIST_FILE override is honoured so one fixture serves both.
-LOGS_SKIPLIST_FILE="${LOGS_SKIPLIST_FILE:-${SKIPLIST_FILE:-$LOGS_DOTFILES_DIR/private/audit/skiplist.conf}}"
+DEVOPS_PRIVATE_DIR="${DEVOPS_PRIVATE_DIR:-$(if [ -d "$LOGS_DOTFILES_DIR/private" ]; then cd "$LOGS_DOTFILES_DIR/private" && pwd; else echo "$HOME/dev/dotfiles/private"; fi)}"
+LOGS_SKIPLIST_FILE="${LOGS_SKIPLIST_FILE:-${SKIPLIST_FILE:-$DEVOPS_PRIVATE_DIR/audit/skiplist.conf}}"
 
 # shellcheck source=security/patterns.sh
 [ -n "${CHANGELOG_EXEMPT_ERE:-}" ] || . "$LOGS_LIB_DIR/../patterns.sh"

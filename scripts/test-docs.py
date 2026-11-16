@@ -235,49 +235,14 @@ def main(argv):
     results.append((not private_problems, "private: no public doc links into private/", private_problems))
 
     index = POLICY_INDEX.read_text(encoding="utf-8")
-    claude = DEV_CLAUDE_SRC.read_text(encoding="utf-8")
     unindexed = []
     for p in sorted(POLICY.glob("*.md")):
         if p != POLICY_INDEX and f"]({p.name}" not in index:
             unindexed.append(f"indexed: {p.name} not linked from {POLICY_INDEX.name}")
-        if f"`dotfiles/docs/policy/{p.name}`" not in claude:
-            unindexed.append(f"indexed: {p.name} not listed in claude/dev-CLAUDE.md")
-    results.append((not unindexed, "indexed: every policy doc is linked and listed", unindexed))
+    results.append((not unindexed, "indexed: every policy doc is linked from the index", unindexed))
 
-    if DEV_CLAUDE_LIVE.exists():
-        same = DEV_CLAUDE_LIVE.read_bytes() == DEV_CLAUDE_SRC.read_bytes()
-        results.append((same, "synced: workspace CLAUDE.md matches claude/dev-CLAUDE.md",
-                        [] if same else ["synced: copy claude/dev-CLAUDE.md to the workspace CLAUDE.md"]))
-    else:
-        print("  - SKIP: synced: no workspace CLAUDE.md on this machine")
-
-    if GLOBAL_CLAUDE_LIVE.exists():
-        same = GLOBAL_CLAUDE_LIVE.read_bytes() == GLOBAL_CLAUDE_SRC.read_bytes()
-        results.append((same, "synced: ~/.claude/CLAUDE.md matches claude/CLAUDE.md",
-                        [] if same else ["synced: edit claude/CLAUDE.md, then copy it to ~/.claude/CLAUDE.md"]))
-    else:
-        print("  - SKIP: synced: no ~/.claude/CLAUDE.md on this machine")
-
-    if COWORK_CLAUDE_LIVE.exists():
-        same = COWORK_CLAUDE_LIVE.read_bytes() == COWORK_CLAUDE_SRC.read_bytes()
-        results.append((same, "synced: ~/Claude/CLAUDE.md matches claude/cowork-CLAUDE.md",
-                        [] if same else ["synced: edit claude/cowork-CLAUDE.md, then copy it to ~/Claude/CLAUDE.md"]))
-    else:
-        print("  - SKIP: synced: no ~/Claude/CLAUDE.md on this machine")
-
-    if TEMPLATES_CLAUDE_LIVE.exists():
-        same = TEMPLATES_CLAUDE_LIVE.read_bytes() == TEMPLATES_CLAUDE_SRC.read_bytes()
-        results.append((same, "synced: ~/dev/templates/CLAUDE.md matches claude/templates-CLAUDE.md",
-                        [] if same else ["synced: edit claude/templates-CLAUDE.md, then copy it to ~/dev/templates/CLAUDE.md"]))
-    else:
-        print("  - SKIP: synced: no ~/dev/templates/CLAUDE.md on this machine")
-
-    if SETTINGS_LIVE.exists():
-        missing = sorted(hooks(SETTINGS_SRC) - hooks(SETTINGS_LIVE))
-        results.append((not missing, "synced: ~/.claude/settings.json registers every tracked hook",
-                        [f"synced: live settings.json lacks {e} [{m or '*'}] {c}" for e, m, c in missing]))
-    else:
-        print("  - SKIP: synced: no ~/.claude/settings.json on this machine")
+    # The CLAUDE.md copies and settings.json are synced and checked in dotfiles,
+    # where their sources live (the split, docs/design-decisions.md D76).
 
     section = enforcement_section()
     ids = policy_check_ids()
@@ -285,8 +250,6 @@ def main(argv):
     problems = [f"enforced: check id `{i}` has no row in repo-standards.md § Enforcement" for i in unlisted]
     if len(ids) < 5:
         problems.append(f"enforced: found only {len(ids)} check ids in 20-policy.sh; the pattern is broken")
-    if "repo-standards.md` § Enforcement" not in claude:
-        problems.append("enforced: claude/dev-CLAUDE.md does not point to repo-standards.md § Enforcement")
     results.append((not problems, f"enforced: {len(ids)} policy check ids are in the enforcement table", problems))
 
     failed = 0

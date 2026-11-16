@@ -81,10 +81,12 @@ git_ro() {
 # shows the format. FAIL CLOSED: without the list, a do-not-touch repo would
 # silently be scanned like any other, which is the one thing a skip exists to
 # prevent. Tests pass SKIPLIST_FILE explicitly.
-SKIPLIST_FILE="${SKIPLIST_FILE:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/private/audit/skiplist.conf}"
+AUDIT_REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+DEVOPS_PRIVATE_DIR="${DEVOPS_PRIVATE_DIR:-$(if [ -d "$AUDIT_REPO_DIR/private" ]; then cd "$AUDIT_REPO_DIR/private" && pwd; else echo "$HOME/dev/dotfiles/private"; fi)}"
+SKIPLIST_FILE="${SKIPLIST_FILE:-$DEVOPS_PRIVATE_DIR/audit/skiplist.conf}"
 if [ ! -f "$SKIPLIST_FILE" ]; then
   echo "skip list not found: $SKIPLIST_FILE" >&2
-  echo "clone the private companion repo into dotfiles/private/, or set SKIPLIST_FILE." >&2
+  echo "clone the private companion repo (DEVOPS_PRIVATE_DIR, default ~/dev/dotfiles/private), or set SKIPLIST_FILE (skiplist.example.conf shows the format)." >&2
   exit 2
 fi
 

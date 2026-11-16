@@ -8,7 +8,7 @@
 #     contents: read
 #   jobs:
 #     security:
-#       uses: pieteradejong/dotfiles/.github/workflows/security-reusable.yml@main
+#       uses: pieteradejong/devops/.github/workflows/security-reusable.yml@main
 #
 # Two jobs, the server-side layer behind the local commit/push gate. They catch
 # whatever reached GitHub without passing this machine's hooks: another machine,
@@ -44,7 +44,7 @@ on:
         type: string
         default: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
       policy-ref:
-        description: ref of pieteradejong/dotfiles whose security/ rules are used
+        description: ref of pieteradejong/devops whose security/ rules are used
         type: string
         default: main
 
@@ -65,7 +65,7 @@ jobs:
       - name: Fetch shared policy
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          repository: pieteradejong/dotfiles
+          repository: pieteradejong/devops
           ref: ${{ inputs.policy-ref }}
           path: .security-policy
           sparse-checkout: security/gitleaks.toml
@@ -106,7 +106,7 @@ jobs:
       - name: Fetch shared policy
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          repository: pieteradejong/dotfiles
+          repository: pieteradejong/devops
           ref: ${{ inputs.policy-ref }}
           path: .security-policy
           sparse-checkout: security

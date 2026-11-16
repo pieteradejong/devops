@@ -2,7 +2,7 @@
 
 How a project goes from this machine to a URL, and onto the portfolio site if it should be
 listed. This is the one path every web project follows. Why it is built this way: decision D42
-in [design-decisions.md](design-decisions.md).
+in [design-decisions.md](https://github.com/pieteradejong/dotfiles/blob/main/docs/design-decisions.md).
 
 ```mermaid
 flowchart LR

@@ -21,7 +21,7 @@ content a connector fetches become part of a prompt sent to a hosted model. What
 
 ## 2. What may go to a hosted model
 
-| Class | Hosted assistant or API | Local model (`bin/llm`, [llm](../llm.md)) |
+| Class | Hosted assistant or API | Local model (`bin/llm`, [llm](https://github.com/pieteradejong/dotfiles/blob/main/docs/llm.md)) |
 |---|---|---|
 | Public, Internal | Yes | Yes |
 | Personal (the user's own) | Yes, when the task needs it | Yes |

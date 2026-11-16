@@ -3,7 +3,7 @@
 Code other people wrote, and the pipelines that build and deploy it. Pins and licensing:
 [repo standards](repo-standards.md#dependencies). Secret scanning and GitHub settings:
 [security & privacy §9–§10](security-and-privacy.md#9-secret-scanning-in-ci--the-standard-for-every-repo).
-Why these rules: [D23](../design-decisions.md#d23--actions-pinned-by-sha-auto-allow-excludes-secret-printing-commands--2026-09-26).
+Why these rules: [D23](https://github.com/pieteradejong/dotfiles/blob/main/docs/design-decisions.md#d23--actions-pinned-by-sha-auto-allow-excludes-secret-printing-commands--2026-09-26).
 
 **Every dependency and every CI action runs with your credentials.** An install script runs
 as you on this Mac; a workflow step runs with the repo's token. Trust is granted per package

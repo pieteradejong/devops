@@ -7,7 +7,7 @@
 #
 #   jobs:
 #     gitleaks:
-#       uses: pieteradejong/dotfiles/.github/workflows/gitleaks-reusable.yml@main
+#       uses: pieteradejong/devops/.github/workflows/gitleaks-reusable.yml@main
 #
 # It scans the FULL git history (not just the diff), with the same shared ruleset
 # the local commit/push gate uses (security/gitleaks.toml from this repo), so a
@@ -31,7 +31,7 @@ on:
         type: string
         default: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
       policy-ref:
-        description: ref of pieteradejong/dotfiles whose security/gitleaks.toml is used
+        description: ref of pieteradejong/devops whose security/gitleaks.toml is used
         type: string
         default: main
 
@@ -52,7 +52,7 @@ jobs:
       - name: Fetch shared gitleaks policy
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          repository: pieteradejong/dotfiles
+          repository: pieteradejong/devops
           ref: ${{ inputs.policy-ref }}
           path: .gitleaks-policy
           sparse-checkout: security/gitleaks.toml

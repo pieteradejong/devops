@@ -41,6 +41,9 @@ set -u
 
 GATE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DOTFILES_DIR="$(cd "$GATE_DIR/.." && pwd)"
+# The private companion repo: ./private/ beside this repo when present (tests,
+# a stranger's own copy), else the clone inside dotfiles. Override with DEVOPS_PRIVATE_DIR.
+DEVOPS_PRIVATE_DIR="${DEVOPS_PRIVATE_DIR:-$(if [ -d "$DOTFILES_DIR/private" ]; then cd "$DOTFILES_DIR/private" && pwd; else echo "$HOME/dev/dotfiles/private"; fi)}"
 # shellcheck source=security/patterns.sh
 . "$GATE_DIR/patterns.sh"
 # shellcheck source=security/lib/visibility.sh
@@ -48,12 +51,12 @@ DOTFILES_DIR="$(cd "$GATE_DIR/.." && pwd)"
 # shellcheck source=security/lib/logs.sh
 . "$GATE_DIR/lib/logs.sh"
 
-PERSONAL_PATTERNS_FILE="$DOTFILES_DIR/private/security/personal-patterns.conf"
+PERSONAL_PATTERNS_FILE="$DEVOPS_PRIVATE_DIR/security/personal-patterns.conf"
 # owner/repo slugs, one per line, of PRIVATE GitHub repos that exist to hold
 # personal data (the private companion repo). Only there does personal data
 # warn instead of block on push. Central and private, so a repo cannot exempt
 # itself.
-PERSONAL_DATA_REPOS_FILE="${SECURITY_GATE_PERSONAL_DATA_REPOS:-$DOTFILES_DIR/private/security/personal-data-repos.conf}"
+PERSONAL_DATA_REPOS_FILE="${SECURITY_GATE_PERSONAL_DATA_REPOS:-$DEVOPS_PRIVATE_DIR/security/personal-data-repos.conf}"
 BYPASS_LOG="${SECURITY_GATE_BYPASS_LOG:-$HOME/.local/state/security-gate/bypass.log}"
 GITLEAKS_CONFIG="$GATE_DIR/gitleaks.toml"
 MAX_FILE_BYTES=$((50 * 1024 * 1024))
@@ -114,6 +117,7 @@ is_dotfiles_repo() {
   local top url
   top="$(cd "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null && pwd -P)" || return 1
   [ "$top" = "$(cd "$DOTFILES_DIR" && pwd -P)" ] && return 0
+  [ "$top" = "$(cd "$DEVOPS_PRIVATE_DIR/.." 2>/dev/null && pwd -P)" ] && return 0
   for url in $(git config --get-regexp '^remote\..*\.url$' 2>/dev/null | awk '{print $2}'); do
     case "$(gh_slug_from_url "$url" 2>/dev/null)" in "$DOTFILES_SLUG") return 0 ;; esac
   done
@@ -508,7 +512,7 @@ check_repo_at() {
   # the data the repo exists to hold. The local gate covers it instead.
   [ -z "$found" ] && [ "$vis" = PRIVATE ] && is_personal_data_repo "$url" && found=exempt
   [ -n "$found" ] || block no-security-ci \
-    "no workflow calls pieteradejong/dotfiles/.github/workflows/security-reusable.yml — add .github/workflows/security.yml (docs/policy/security-and-privacy.md §9)"
+    "no workflow calls security-reusable.yml (pieteradejong/devops, or the dotfiles forwarder) — add .github/workflows/security.yml (docs/policy/security-and-privacy.md §9)"
 
   [ "$vis" = PRIVATE ] && return 0
   for lic in LICENSE LICENSE.md LICENSE.txt COPYING; do
@@ -753,8 +757,8 @@ cmd_status() {
   fi
   if [ -f "$PERSONAL_PATTERNS_FILE" ]; then ok "private personal-patterns list present"
   else nok "private personal-patterns list missing ($PERSONAL_PATTERNS_FILE)"; fi
-  if git -C "$DOTFILES_DIR" check-ignore -q private/x 2>/dev/null; then ok "dotfiles/private/ is gitignored"
-  else nok "dotfiles/private/ is NOT gitignored"; fi
+  if git -C "$DEVOPS_PRIVATE_DIR/.." check-ignore -q private/x 2>/dev/null; then ok "$DEVOPS_PRIVATE_DIR is gitignored by its parent repo"
+  else nok "$DEVOPS_PRIVATE_DIR is NOT gitignored by its parent repo"; fi
   [ -f "$BYPASS_LOG" ] && printf '  %sinfo%s  %s bypass(es) logged in %s\n' "$C_DIM" "$C_RST" "$(num "$(wc -l < "$BYPASS_LOG")")" "$BYPASS_LOG"
   return "$bad"
 }

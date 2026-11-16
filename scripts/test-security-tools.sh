@@ -9,8 +9,6 @@
 #   scripts/security-audit.sh           the weekly audit (--quick, stub gh)
 #   scripts/audit-dashboard.py          the local HTML dashboard over the audit output
 #   scripts/audit/50-gate.sh            dotaudit's gate module
-#   scripts/sync-dotfiles.sh            the sanitizers that keep personal values
-#                                       out of this PUBLIC repo on the way in
 #
 # Run: ./scripts/test-security-tools.sh [--verbose]     Exit: 0 all passed, 1 otherwise.
 #
@@ -144,11 +142,7 @@ wmcp 0 'mcp__claude_ai_Google_Drive__create_file'
 printf '{"tool_name":"Read","tool_input":{"file_path":"/x"}}' | "$WGUARD" > "$OUT" 2>&1 && pass "allows non-Bash tool input" || fail "non-Bash tool input was denied"
 printf '%s' '{"tool_name":"Bash","tool_input":{"command":"gh gist create x"}}' | "$WGUARD" > "$OUT" 2>&1
 grep -q 'Blocked by guard-github-write' "$OUT" && pass "denial explains itself on stderr" || fail "denial message missing"
-SET="$DOTFILES_DIR/claude/settings.json"
-jq -e '[.hooks.PreToolUse[] | select(.matcher == "Bash") | .hooks[].command] | any(test("guard-github-write\\.sh$"))' "$SET" >/dev/null \
-  && pass "settings.json registers guard-github-write for Bash" || fail "guard-github-write not registered for Bash"
-jq -e '[.hooks.PreToolUse[] | select(.matcher == "mcp__.*github.*") | .hooks[].command] | any(test("guard-github-write\\.sh$"))' "$SET" >/dev/null \
-  && pass "settings.json registers guard-github-write for GitHub MCP tools" || fail "guard-github-write not registered for GitHub MCP tools"
+# settings.json registration of these hooks is tested in dotfiles, where settings.json lives.
 
 # ================================================================================
 header "github-security-sweep.sh (stub gh)"
@@ -462,173 +456,7 @@ grep -q 'gate-not-registered' "$tsv" && fail "registered gate still reported" ||
 grep -q $'^WARN\tgate\t-\tgate-bypassed' "$tsv" && pass "recent bypass is a WARN" || fail "recent bypass not reported"
 
 # ================================================================================
-# The sanitizers are the reason a backup of a live config can be committed to a
-# public repo at all. They run on the way IN, so a regression here republishes a
-# real value on the next `dotbackup` — with nothing to notice it but the gate.
-header "sync-dotfiles.sh sanitizers"
-
-# Extract ONLY the sanitizer function bodies. Sourcing the script's whole
-# prologue instead would also define its log/success/warn/fail helpers, and its
-# fail() calls `exit 1` — which silently replaces this suite's fail(), so the
-# first failing assertion would abort the run before the summary instead of
-# being counted. Its log() also writes to the real ~/.dotfiles-backup/sync.log.
-awk '/^(sanitize|desanitize|expand)_[a-z_]+\(\) \{/,/^\}/' \
-  "$DOTFILES_DIR/scripts/sync-dotfiles.sh" > "$T/sanitizers.sh"
-# shellcheck source=/dev/null
-. "$T/sanitizers.sh"
-
-n_fn="$(grep -c '^\(sanitize\|desanitize\|expand\)_[a-z_]*() {' "$T/sanitizers.sh")"
-[ "$n_fn" -ge 6 ] && pass "extracted $n_fn sanitizers from sync-dotfiles.sh" \
-                  || fail "expected at least 6 sanitizers, extracted $n_fn"
-# The extraction must not have dragged in the script's own fail(), which exits.
-grep -q '^fail()' "$T/sanitizers.sh" \
-  && fail "the extraction pulled in sync-dotfiles.sh's fail() and would abort this suite" \
-  || pass "the extraction defines sanitizers only, not the script's helpers"
-
-# --- gitconfig: absolute home paths become ~/ --------------------------------
-printf 'excludesfile = /Users/someone/.gitignore_global\n' > "$T/gc"
-out="$(sanitize_gitconfig < "$T/gc")"
-case "$out" in
-  *"/Users/"*) fail "sanitize_gitconfig rewrites an absolute home path" ;;
-  *"~/.gitignore_global"*) pass "sanitize_gitconfig rewrites an absolute home path" ;;
-  *) fail "sanitize_gitconfig rewrites an absolute home path (got: $out)" ;;
-esac
-
-# --- ssh config: host, user and port are replaced by placeholders ------------
-printf 'Host h\n  HostName real.example.net\n  User someone\n  Port 2222\n' > "$T/ssh"
-out="$(sanitize_ssh_config < "$T/ssh")"
-case "$out" in
-  *real.example.net*|*someone*|*2222*) fail "sanitize_ssh_config removes host, user and port" ;;
-  *) pass "sanitize_ssh_config removes host, user and port" ;;
-esac
-
-# --- npmrc: literal auth values dropped, env-var references and settings kept -
-# The token is built at runtime so no token-shaped literal is ever committed.
-tok="npm_$(printf 'a%.0s' 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36)"
-{
-  printf '//registry.npmjs.org/:_authToken=%s\n' "$tok"
-  printf '_auth=%s\n' "$(printf 'someone:pw' | base64)"
-  # shellcheck disable=SC2016 # ${GITHUB_TOKEN} is a literal reference, not an expansion
-  printf '//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}\n'
-  printf '@someorg:registry=https://npm.pkg.github.com\n'
-  printf 'save-exact=true\n'
-} > "$T/npmrc"
-out="$(sanitize_npmrc < "$T/npmrc")"
-# shellcheck disable=SC2016 # matching the literal reference
-case "$out" in
-  *"$tok"*|*"_auth="*|*someorg*) fail "sanitize_npmrc drops literal auth values and scoped registries (got: $out)" ;;
-  *'_authToken=${GITHUB_TOKEN}'*save-exact=true*) pass "sanitize_npmrc drops literal auth values and scoped registries, keeps references" ;;
-  *) fail "sanitize_npmrc keeps env-var references and settings (got: $out)" ;;
-esac
-
-# --- docker config: auth entries emptied, registry names and credsStore kept -
-b64="$(printf 'someone:pw' | base64)"
-printf '{"auths":{"ghcr.io":{"auth":"%s"}},"credsStore":"osxkeychain"}\n' "$b64" > "$T/docker.json"
-out="$(sanitize_docker_config < "$T/docker.json" 2>/dev/null)"
-case "$out" in
-  *"$b64"*) fail "sanitize_docker_config drops auth values" ;;
-  *ghcr.io*osxkeychain*) pass "sanitize_docker_config drops auth values, keeps registries and credsStore" ;;
-  *) fail "sanitize_docker_config output unexpected (got: $out)" ;;
-esac
-
-# --- sanitize_copy: a failing sanitizer keeps the old copy, not a truncated one
-printf 'ORIGINAL\n' > "$T/sc-dst"
-# shellcheck disable=SC2034,SC2329 # DRY_RUN, success and log are read by sanitize_copy
-out="$(DRY_RUN=false; success() { :; }; log() { :; }
-       sanitize_copy "$T/docker.json" "$T/sc-dst" false; echo "rc=$?")"
-if [ "$out" = "rc=1" ] && [ "$(cat "$T/sc-dst")" = ORIGINAL ] && ! ls "$T"/sc-dst.tmp.* >/dev/null 2>&1; then
-  pass "sanitize_copy keeps the existing copy when the sanitizer fails"
-else
-  fail "sanitize_copy keeps the existing copy when the sanitizer fails (got: $out, $(cat "$T/sc-dst"))"
-fi
-
-# --- home-path sanitizer: XML and JSON, both round-tripping losslessly -------
-# The stored marker is a literal $HOME, not ~. That is the correctness argument:
-# iTerm2's real prefs already contain a genuine ~/Library/... value, and a
-# ~-based marker cannot tell a tilde the sanitizer produced from one that was
-# always there. The first version of this did exactly that and silently
-# rewrote a real value on the way out.
-cat > "$T/agent.plist" <<'PLIST'
-<?xml version="1.0" encoding="UTF-8"?>
-<plist version="1.0">
-<dict>
-	<key>ProgramArguments</key>
-	<array>
-		<string>/Users/someone/dev/dotfiles/bin/weekly-disk-cleanup.sh</string>
-	</array>
-	<key>StandardOutPath</key>
-	<string>/Users/someone/.weekly-disk-cleanup.launchd.log</string>
-	<key>Working Directory</key>
-	<string>/Users/someone</string>
-	<key>PreExistingTilde</key>
-	<string>~/Library/Application Support/Thing/Scripts</string>
-</dict>
-</plist>
-PLIST
-
-cat > "$T/settings.json" <<'JSON'
-{
-    "projectManager.git.baseFolders": [
-        "/Users/someone/dev"
-    ],
-    "some.tildePath": "~/already/a/tilde"
-}
-JSON
-
-for fixture in agent.plist settings.json; do
-  sanitize_home_paths < "$T/$fixture" > "$T/$fixture.san"
-  grep -qE '/Users/[a-z]' "$T/$fixture.san" \
-    && fail "sanitize_home_paths leaves no absolute home path ($fixture)" \
-    || pass "sanitize_home_paths leaves no absolute home path ($fixture)"
-
-  # Lossless round-trip against what the live file would be on THIS machine.
-  sed -e "s#/Users/someone#$HOME#g" "$T/$fixture" > "$T/$fixture.expected"
-  expand_home_paths < "$T/$fixture.san" > "$T/$fixture.rt"
-  diff -q "$T/$fixture.expected" "$T/$fixture.rt" >/dev/null \
-    && pass "sanitize | expand round-trips losslessly ($fixture)" \
-    || { cp "$T/$fixture.rt" "$OUT"; fail "sanitize | expand round-trips losslessly ($fixture)"; }
-done
-
-# The bare form: a home path with nothing after it is still a home path. A
-# trailing-slash-only rule misses iTerm2's "Working Directory" entirely.
-# shellcheck disable=SC2016 # $HOME is the literal marker being asserted, not an expansion
-grep -q '<string>$HOME</string>' "$T/agent.plist.san" \
-  && pass "sanitize_home_paths catches a bare /Users/<name> with no trailing slash" \
-  || fail "sanitize_home_paths catches a bare /Users/<name> with no trailing slash"
-
-# A tilde that was ALREADY in the file must survive untouched, in both directions.
-grep -q '<string>~/Library/Application Support/Thing/Scripts</string>' "$T/agent.plist.rt" \
-  && pass "a pre-existing ~ is not rewritten by the round-trip (XML)" \
-  || fail "a pre-existing ~ is not rewritten by the round-trip (XML)"
-grep -q '"~/already/a/tilde"' "$T/settings.json.rt" \
-  && pass "a pre-existing ~ is not rewritten by the round-trip (JSON)" \
-  || fail "a pre-existing ~ is not rewritten by the round-trip (JSON)"
-
-# Both formats must still parse after expansion, or restore installs a broken file.
-if command -v plutil >/dev/null 2>&1; then
-  plutil -lint "$T/agent.plist.rt" > "$OUT" 2>&1 \
-    && pass "the round-tripped plist is still valid" \
-    || fail "the round-tripped plist is still valid"
-fi
-if command -v python3 >/dev/null 2>&1; then
-  python3 -m json.tool "$T/settings.json.rt" > "$OUT" 2>&1 \
-    && pass "the round-tripped JSON is still valid" \
-    || fail "the round-tripped JSON is still valid"
-fi
-
-# Every sanitize_copy call must name a function that exists — the check that
-# catches a rename orphaning a caller.
-miss=0
-: > "$OUT"
-grep -oE 'sanitize_copy [^|]*[[:space:]](sanitize_[a-z_]+)' "$DOTFILES_DIR/scripts/sync-dotfiles.sh" \
-  | awk '{print $NF}' | sort -u > "$T/called-fns"
-while read -r fn; do
-  [ -n "$fn" ] || continue
-  grep -q "^${fn}() {" "$T/sanitizers.sh" || { miss=1; echo "missing: $fn" >> "$OUT"; }
-done < "$T/called-fns"
-[ "$miss" = 0 ] && pass "every sanitize_copy call names a sanitizer that exists" \
-                || fail "every sanitize_copy call names a sanitizer that exists"
-
+header "tree checks"
 # --- THE regression guard ----------------------------------------------------
 # No tracked file in this PUBLIC repo may contain this machine's real home path.
 # Fixtures using /Users/alice, /Users/someone and /Users/somebody stay allowed —
@@ -677,38 +505,7 @@ if command -v gitleaks >/dev/null 2>&1; then
   fi
 fi
 
-# ================================================================================
-header "claude/settings.json auto-allow list (ai-and-external-services.md §5, D23)"
-# Auto-allowed commands must neither print a secret nor run arbitrary code. An entry
-# is unsafe when its command is on this list or it is a bare-program wildcard for one
-# (e.g. Bash(git:*) covers push, config and diff --no-index).
-UNSAFE_CMDS='cat head tail less more bat env printenv echo printf ps git git diff git show git config node python python3 npx npm pnpm yarn bun deno brew pip pip3 grep rg find fd xargs time cp mv rm sh bash zsh eval exec curl wget ./run.sh ./run.sh build open osascript security'
-SETTINGS="$DOTFILES_DIR/claude/settings.json"
-bad=""
-while IFS= read -r entry; do
-  cmd="$(printf '%s' "$entry" | sed -nE 's/^Bash\(([^:)]*)(:\*)?\)$/\1/p')"
-  [ -n "$cmd" ] || continue
-  case " $UNSAFE_CMDS " in
-    *" $cmd "*) bad="$bad $entry" ;;
-  esac
-done < <(jq -r '(.permissions.allow // .allow // [])[]' "$SETTINGS")
-if [ -z "$bad" ]; then
-  pass "no auto-allowed command can print a secret or run arbitrary code"
-else
-  fail "unsafe auto-allow entries in claude/settings.json:$bad"
-fi
-
-# The deny list backs up the credential and force-push rules (D25); a deny wins over any allow.
-missing=""
-for d in 'Read(~/.ssh/**)' 'Read(~/.aws/**)' 'Read(**/.env)' 'Read(**/.env.*)' \
-         'Bash(git push --force:*)' 'Bash(git push -f:*)'; do
-  jq -e --arg d "$d" '(.permissions.deny // []) | index($d)' "$SETTINGS" >/dev/null || missing="$missing $d"
-done
-if [ -z "$missing" ]; then
-  pass "deny list covers credential reads and force pushes"
-else
-  fail "claude/settings.json deny list is missing:$missing"
-fi
+# The claude/settings.json auto-allow and deny-list checks stay in dotfiles with the file.
 
 # ================================================================================
 header "Summary"

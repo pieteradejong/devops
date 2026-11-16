@@ -1,0 +1,26 @@
+# The private companion repo, if cloned here. Never commit it: the gate and CI refuse it too.
+/private/
+
+# Audit output belongs in ~/dev/audit-reports/, never in a repo. dev-audit.sh refuses to write
+# into a git repo; these rules are the second layer.
+reports/
+audit-reports/
+*.report.md
+findings-*.tsv
+audit-????-??-??.md
+
+# macOS, editors, Python
+.DS_Store
+**/.DS_Store
+*.swp
+.vscode/
+.idea/
+__pycache__/
+.ruff_cache/
+
+# Secrets: never here
+.env
+.env.*
+!.env.example
+*.pem
+*.key

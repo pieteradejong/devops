@@ -17,7 +17,7 @@
 audit_launchd() {
   local CAT=launchd
   hdr "launchd register"
-  local reg="${LAUNCHD_REGISTER:-$DEV_ROOT/dotfiles/private/registers/launchd.md}"
+  local reg="${LAUNCHD_REGISTER:-$DEVOPS_PRIVATE_DIR/registers/launchd.md}"
   local dir="${LAUNCH_AGENTS_DIR:-$HOME/Library/LaunchAgents}"
   local p label row want src
 

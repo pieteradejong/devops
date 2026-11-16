@@ -1,8 +1,8 @@
 # Security & privacy policy
 
 The rules every repo on this machine follows. Why they are built this way:
-[design decisions](../design-decisions.md). The weekly run that checks them:
-[maintenance](../maintenance.md). Licensing, hygiene and dependencies:
+[design decisions](https://github.com/pieteradejong/dotfiles/blob/main/docs/design-decisions.md). The weekly run that checks them:
+[maintenance](https://github.com/pieteradejong/dotfiles/blob/main/docs/maintenance.md). Licensing, hygiene and dependencies:
 [repo standards](repo-standards.md). Assistant setup: [AI instructions](ai-instructions.md).
 
 This doc governs **what gets committed and published**. What the code does, what data it handles,
@@ -288,7 +288,7 @@ scrapers included, and it cannot be scrubbed without rewriting history.
 3. **Fix forward.** Remove the value from the tree, close the path that put it there (a sync
    script will re-leak a redacted file), and add the check that would have caught it.
    **No history rewrites:** published history is already cloned and cached; a rewrite breaks
-   clones and links and gives false closure ([D11](../design-decisions.md)).
+   clones and links and gives false closure ([D11](https://github.com/pieteradejong/dotfiles/blob/main/docs/design-decisions.md)).
 4. **Record it** in the private findings register with the verification command and its output
    ([decisions need verification](ai-instructions.md#decisions-need-verification)).
 
@@ -352,7 +352,7 @@ every local repo (with full history in the first week of each month); the GitHub
 mirrors and scans GitHub repos with no local clone; the bypass log; credential-shaped files outside
 version control; account SSH keys and token scopes. The report is
 `~/dev/audit-reports/security-audit-YYYY-MM-DD.md` (mode 600); the notification carries counts
-only. What each section means and what to do: [maintenance](../maintenance.md).
+only. What each section means and what to do: [maintenance](https://github.com/pieteradejong/dotfiles/blob/main/docs/maintenance.md).
 
 ## 12. Five-layer guard for paths that must never be committed
 
@@ -420,9 +420,9 @@ What an assistant may read and send, and how connectors are used:
 
 ## 15. Related
 
-- [Design decisions](../design-decisions.md) — why the gate, audit and public/private split look like this.
+- [Design decisions](https://github.com/pieteradejong/dotfiles/blob/main/docs/design-decisions.md) — why the gate, audit and public/private split look like this.
 - [Secure development](secure-development.md) · [privacy by design](privacy-by-design.md) · [supply chain](supply-chain.md) · [AI and external services](ai-and-external-services.md)
-- [`dotaudit`](../dev-audit.md) · [maintenance](../maintenance.md) · [repo standards](repo-standards.md) · [backups](backups.md) · [AI instructions](ai-instructions.md)
+- [`dotaudit`](../dev-audit.md) · [maintenance](https://github.com/pieteradejong/dotfiles/blob/main/docs/maintenance.md) · [repo standards](repo-standards.md) · [backups](backups.md) · [AI instructions](ai-instructions.md)
 - Private registers — in the private companion repo, not published: findings
   (`../../private/registers/findings.md`), do-not-touch list (`../../private/registers/do-not-touch.md`),
   per-repo privacy state (`../../private/registers/per-repo-privacy.md`), GitHub baseline

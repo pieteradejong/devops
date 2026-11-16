@@ -22,7 +22,8 @@ set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DOTFILES_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-SKIPLIST_FILE="${SKIPLIST_FILE:-$DOTFILES_DIR/private/audit/skiplist.conf}"
+DEVOPS_PRIVATE_DIR="${DEVOPS_PRIVATE_DIR:-$(if [ -d "$DOTFILES_DIR/private" ]; then cd "$DOTFILES_DIR/private" && pwd; else echo "$HOME/dev/dotfiles/private"; fi)}"
+SKIPLIST_FILE="${SKIPLIST_FILE:-$DEVOPS_PRIVATE_DIR/audit/skiplist.conf}"
 
 MODE=dry-run
 OWNER=pieteradejong
@@ -48,7 +49,7 @@ gh auth status >/dev/null 2>&1 || { echo "gh is not authenticated (gh auth login
 
 # Fail closed on the skip list: without it a do-not-touch repo would be swept.
 if [ ! -f "$SKIPLIST_FILE" ]; then
-  echo "skip list not found: $SKIPLIST_FILE (clone the private companion repo into dotfiles/private/)" >&2
+  echo "skip list not found: $SKIPLIST_FILE (clone the private companion repo; see DEVOPS_PRIVATE_DIR)" >&2
   exit 2
 fi
 SKIP_NAMES=" $(grep -E '^skip:' "$SKIPLIST_FILE" | cut -d: -f2 | tr '\n' ' ') "

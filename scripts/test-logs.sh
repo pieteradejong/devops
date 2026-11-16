@@ -18,7 +18,7 @@
 #   7. security/gate.sh              no-changelog-entry, changelog-no-unreleased,
 #                                    decision-unverified, decision-ref-missing
 #   8. dotaudit (20-policy.sh)       no-changelog, decisions-unverified, docs-redundant
-#   9. registration and docs         settings.json, test.sh, the Enforcement table
+#   9. registration and docs         test.sh, the Enforcement table, README
 #
 # Every case builds throwaway repos under a temp dir with a fixture global git
 # config that registers the gate exactly as ~/.gitconfig does, a stub `gh`, and
@@ -622,13 +622,7 @@ out_lacks 'someones +(no-changelog|decisions-unverified)' "a fork: skip-list row
 
 # ================================================================================
 header "9. Registration and docs"
-SET="$DOTFILES_DIR/claude/settings.json"
-jq -e '[.hooks.Stop[] | .hooks[].command] | any(test("stop-log-check\\.sh$"))' "$SET" >/dev/null \
-  && pass "settings.json registers stop-log-check.sh under Stop" || fail "Stop hook not registered"
-jq -e '[.hooks.SessionStart[] | .hooks[].command] | any(test("session-start\\.sh$"))' "$SET" >/dev/null \
-  && pass "settings.json registers session-start.sh under SessionStart" || fail "SessionStart hook not registered"
-jq -e '[.hooks.UserPromptSubmit[] | .hooks[].command] | any(test("prompt-followup\\.sh$"))' "$SET" >/dev/null \
-  && pass "settings.json registers prompt-followup.sh under UserPromptSubmit" || fail "UserPromptSubmit hook not registered"
+# The hooks are registered in dotfiles/claude/settings.json; that registration is tested there.
 for f in security/lib/logs.sh bin/whatsup bin/doc-dupes claude/hooks/session-start.sh claude/hooks/prompt-followup.sh claude/hooks/stop-log-check.sh scripts/test-logs.sh; do
   grep -qx "$f" "$DOTFILES_DIR/test.sh" && pass "test.sh shellchecks $f" || fail "test.sh does not shellcheck $f"
 done
@@ -644,9 +638,7 @@ grep -q "\`no-changelog\`" "$DOTFILES_DIR/docs/dev-audit.md" && grep -q "\`decis
 AI="$DOTFILES_DIR/docs/policy/ai-instructions.md"
 grep -q '^## Open items live in `TODO.md`' "$AI" && grep -q '^## Logs are checked for redundancy' "$AI" \
   && pass "ai-instructions.md has the TODO and redundancy sections" || fail "ai-instructions.md lacks a section"
-grep -q 'whatsup' "$DOTFILES_DIR/bin/README.md" && grep -q 'doc-dupes' "$DOTFILES_DIR/bin/README.md" && pass "bin/README.md lists whatsup and doc-dupes" || fail "bin/README.md lacks a tool"
-grep -q 'whatsup' "$DOTFILES_DIR/claude/dev-CLAUDE.md" && grep -q 'doc-dupes' "$DOTFILES_DIR/claude/dev-CLAUDE.md" && grep -q 'TODO.md' "$DOTFILES_DIR/claude/dev-CLAUDE.md" \
-  && pass "the workspace CLAUDE.md names whatsup, doc-dupes and TODO.md" || fail "dev-CLAUDE.md lacks a name"
+grep -q 'whatsup' "$DOTFILES_DIR/README.md" && grep -q 'doc-dupes' "$DOTFILES_DIR/README.md" && pass "README.md lists whatsup and doc-dupes" || fail "README.md lacks a tool"
 
 # ================================================================================
 echo ""
